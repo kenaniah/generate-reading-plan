@@ -2,146 +2,115 @@
 var days = process.argv[2] || 90
 
 //List of books
-var books = { 
-  Genesis: 50,
-  Exodus: 40,
-  Leviticus: 27,
-  Numbers: 36,
-  Deuteronomy: 34,
-  Joshua: 24,
-  Judges: 21,
-  Ruth: 4,
-  '1 Samuel': 31,
-  '2 Samuel': 24,
-  '1 Kings': 22,
-  '2 Kings': 25,
-  '1 Chronicles': 29,
-  '2 Chronicles': 36,
-  Ezra: 10,
-  Nehemiah: 13,
-  Esther: 10,
-  Job: 42,
-//  Psalms: 150,
-//  Proverbs: 31,
-  Ecclesiastes: 12,
-  'Song of Songs': 8,
-  Isaiah: 66,
-  Jeremiah: 52,
-  Lamentations: 5,
-  Ezekiel: 48,
-  Daniel: 12,
-  Hosea: 14,
-  Joel: 3,
-  Amos: 9,
-  Obadiah: 1,
-  Jonah: 4,
-  Micah: 7,
-  Nahum: 3,
-  Habakkuk: 3,
-  Zephaniah: 3,
-  Haggai: 2,
-  Zechariah: 14,
-  Malachi: 4,
-  Matthew: 28,
-  Mark: 16,
-  Luke: 24,
-  John: 21,
-  Acts: 28,
-  Romans: 16,
-  '1 Corinthians': 16,
-  '2 Corinthians': 13,
-  Galatians: 6,
-  Ephesians: 6,
-  Philippians: 4,
-  Colossians: 4,
-  '1 Thessalonians': 5,
-  '2 Thessalonians': 3,
-  '1 Timothy': 6,
-  '2 Timothy': 4,
-  Titus: 3,
-  Philemon: 1,
-  Hebrews: 13,
-  James: 5,
-  '1 Peter': 5,
-  '2 Peter': 3,
-  '1 John': 5,
-  '2 John': 1,
-  '3 John': 1,
-  Jude: 1,
-  Revelation: 22 
-}
+var books = require("./book_list.js")
 
-//Determine the total number of chapters
-var book_list = []
-var chapters = 0
-for (k in books){ 
-	book_list.push([k, books[k]])
-	chapters += books[k];
-}
-var per_day = chapters / days;
+/**
+ * Constructs a new generator that will yield a plan for each day
+ */
+function PlanGenerator(title_list, num_days, repeats){
+	
+	//Other vars
+	this.repeats = repeats || 1
+	this.num_days = num_days
+	this.title_list = title_list
+	
+	//Convert title list to an array if it is not already one
+	if(!Array.isArray(this.title_list)){
+		var tmp_list = []
+		for (var k in this.title_list){
+			tmp_list.push([k, this.title_list[k]])
+		}
+		this.title_list = tmp_list
+	}
+	
 
-console.log("Total chapters: " + chapters)
-console.log("Per day: " + per_day)
-
-//Track overall progress
-var progress = 0;
-
-//Track progress in an individual book
-var book_progress = 0;
-for (var d = 0; d < days; d++) {
+	//An iterator that yields the reading plan per day
+	this[Symbol.iterator] = function* (){
 	
-	var chapters_today = Math.floor(progress + per_day) - Math.floor(progress);
-	
-	//Fix rounding issue on last day
-	if(d + 1 == days) chapters_today = chapters - Math.floor(progress)
-	
-	//console.log("Day " + (d + 1) + ": " + chapters_today)
-	
-	var day = []
-	while(chapters_today){
+		//Manage the number of repeats
+		var repeats = this.repeats
+		var titles = this.title_list.slice()
+		while (--repeats > 0){
+			titles = titles.concat(this.title_list)
+		}
+			
+		//Determine the total number of chapters (or pages)
+		var chapters = 0; titles.forEach(function(v){chapters += v[1]})
+		var per_day = chapters / this.num_days
 		
-		//Did we finish the book?
-		if(book_list[0][1] <= book_progress + chapters_today){
+		//Track progress
+		var progress = 0;
+		var book_progress = 0;
+		
+		//Iterate over days
+		for(var d = 0; d < this.num_days; d++) {
 			
-			//Figure out how many chapters to the end of the book
-			var diff = book_list[0][1] - book_progress
+			var chapters_today = Math.floor(progress + per_day) - Math.floor(progress)
 			
-			//Add the reading
-			day.push([book_list[0][0], book_progress + 1, diff - 1])
+			//Fix rounding issue on last day
+			if(d + 1 == this.num_days){
+				chapters_today = chapters - Math.floor(progress)
+			}
+			//console.log("Day " + (d + 1) + ": " + chapters_today)
 			
-			//Remove the book from the list
-			book_list.shift()
-			book_progress = 0
+			var day = []
+			while(chapters_today){
+				
+				//Did we finish the book?
+				if(titles[0][1] <= book_progress + chapters_today){
+					
+					//Figure out how many chapters to the end of the book
+					var diff = titles[0][1] - book_progress
+					
+					//Add the reading
+					day.push([titles[0][0], book_progress + 1, diff - 1])
+					
+					//Remove the book from the list
+					titles.shift()
+					book_progress = 0
+					
+					//Decrease chapters today
+					chapters_today -= diff
+					
+				}else{
+					
+					//Add the reading
+					day.push([titles[0][0], book_progress + 1, chapters_today - 1])
+					
+					book_progress += chapters_today
+					chapters_today = 0
+					
+				}
+				
+			}
 			
-			//Decrease chapters today
-			chapters_today -= diff
+			//Keep track of where we were last at
+			progress += per_day
 			
-		}else{
-			
-			//Add the reading
-			day.push([book_list[0][0], book_progress + 1, chapters_today - 1])
-			
-			book_progress += chapters_today
-			chapters_today = 0
+			//Output the day
+			yield day
 			
 		}
 		
 	}
-	
-	//Output the reading list
-	var readings = [];
-	for(var i = 0; i < day.length; i++){
-		var segment = day[i]
-		if(segment[2]){
-			readings.push(segment[0] + " " + segment[1] + " - " + (segment[1] + segment[2]))
+		
+}
+
+//Formats a full day's readings
+function formatDay(contents, day){
+	var readings = []
+	for(var i = 0; i < contents.length; i++){
+		var parts = contents[i]
+		if(parts[2]){
+			readings.push(parts[0] + " " + parts[1] + " - " + (parts[1] + parts[2]))
 		}else{
-			readings.push(segment[0] + " " + segment[1])
+			readings.push(parts[0] + " " + parts[1])
 		}
 	}
-	console.log("Day " + (d + 1) + ": " + readings.join(", "))
-	//console.log(readings.join(", "))
-	
-	//Keep track of where we were last at
-	progress += per_day
-	
+	return day ? "Day " + day + ": " + readings.join(", ") : readings.join(", ")
 }
+
+var list1 = new PlanGenerator(books, days)
+
+var i = 0;
+for(var day of list1) console.log(formatDay(day, ++i));
