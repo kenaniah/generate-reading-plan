@@ -1,3 +1,7 @@
+/*
+ * Basic usage
+ */
+
 var reading_plan = require("./reading_plan.js")
 
 //Total number of days
