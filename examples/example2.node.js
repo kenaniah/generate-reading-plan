@@ -2,13 +2,13 @@
  * Generates a reading plan from 3 concurrent strategies
  */
 
-var reading_plan = require("./reading_plan.js")
+var reading_plan = require("../lib/reading_plan.js")
 
 //Total number of days
 var days = process.argv[2] || 90
 
 //List of books
-var books = require("./book_list.js")
+var books = require("../lib/book_list.js")
 delete books['Psalms'], books['Proverbs']
 
 //Generate a reading plan
