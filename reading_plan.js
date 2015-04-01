@@ -1,17 +1,15 @@
-//Total number of days
-var days = process.argv[2] || 90
-
-//List of books
-var books = require("./book_list.js")
-
 /**
  * Constructs a new generator that will yield a plan for each day
+ * @param Array title_list
+ * @param Array num_days
+ * @param Integer repeats
+ * @constructor
  */
 function PlanGenerator(title_list, num_days, repeats){
 	
 	//Other vars
 	this.repeats = repeats || 1
-	this.num_days = num_days
+	this.num_days = num_days || 0
 	this.title_list = title_list
 	
 	//Convert title list to an array if it is not already one
@@ -96,7 +94,12 @@ function PlanGenerator(title_list, num_days, repeats){
 		
 }
 
-//Formats a full day's readings
+/**
+ * Formats a full day's readings
+ * @param Array contents
+ * @param Integer day
+ * @returns String
+ */
 function formatDay(contents, day){
 	var readings = []
 	for(var i = 0; i < contents.length; i++){
@@ -110,7 +113,8 @@ function formatDay(contents, day){
 	return day ? "Day " + day + ": " + readings.join(", ") : readings.join(", ")
 }
 
-var list1 = new PlanGenerator(books, days)
-
-var i = 0;
-for(var day of list1) console.log(formatDay(day, ++i));
+//Export the module
+module.exports = {
+	PlanGenerator: PlanGenerator,
+	formatDay: formatDay
+}
